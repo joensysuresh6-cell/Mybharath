@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyBloom | Student Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: #fff5f8;
+      color: #3f3444;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 30px auto;
+      background: white;
+      padding: 28px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px #e8cbd8;
+    }
+
+    h1 {
+      color: #b54d83;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #806f7c;
+      margin-bottom: 25px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .stat {
+      flex: 1;
+      background: #fff0f6;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      color: #b54d83;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      min-width: 0;
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #e6c7d7;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      background: #b54d83;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #913966;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 10px;
+      border-bottom: 1px solid #f3e4ec;
+    }
+
+    li span {
+      flex: 1;
+      overflow-wrap: anywhere;
+    }
+
+    li.done span {
+      text-decoration: line-through;
+      color: #a89aa3;
+    }
+
+    .delete {
+      background: #f5e6ed;
+      color: #9d3867;
+      padding: 8px 10px;
+    }
+
+    .progress-track {
+      height: 10px;
+      background: #f5e6ed;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 12px 0 24px;
+    }
+
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: #c568a0;
+      transition: width 0.3s;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        padding: 18px;
+      }
+
+      .stats {
+        gap: 6px;
+      }
+
+      .stat {
+        padding: 10px 4px;
+      }
+
+      .input-row button {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>🌸 StudyBloom</h1>
+    <p class="subtitle">Small steps today, big dreams tomorrow.</p>
+
+    <div class="stats">
+      <div class="stat">
+        <strong id="total">0</strong>
+        Total Tasks
+      </div>
+
+      <div class="stat">
+        <strong id="completed">0</strong>
+        Completed
+      </div>
+    </div>
+
+    <h3>Your progress</h3>
+    <div class="progress-track">
+      <div id="progressBar"></div>
+    </div>
+
+    <h3>Today's study tasks</h3>
+
+    <form id="taskForm" class="input-row">
+      <input
+        id="taskInput"
+        type="text"
+        placeholder="e.g. Revise DBMS..."
+        required
+        maxlength="150"
+      >
+      <button type="submit">Add</button>
+    </form>
+
+    <ul id="taskList"></ul>
+    <p id="emptyMessage">No tasks yet. Add your first study goal! ✨</p>
+  </main>
+
+  <script>
+    const taskForm = document.getElementById("taskForm");
+    const taskInput = document.getElementById("taskInput");
+    const taskList = document.getElementById("taskList");
+
+    let tasks = [];
+
+    try {
+      tasks = JSON.parse(
+        localStorage.getItem("studyBloomTasks")
+      ) || [];
+
+      if (!Array.isArray(tasks)) {
+        tasks = [];
+      }
+    } catch {
+      tasks = [];
+    }
+
+    function saveTasks() {
+      localStorage.setItem(
+        "studyBloomTasks",
+        JSON.stringify(tasks)
+      );
+    }
+
+    function updateDashboard() {
+      const completedCount =
+        tasks.filter(task => task.completed).length;
+
+      document.getElementById("total").textContent =
+        tasks.length;
+
+      document.getElementById("completed").textContent =
+        completedCount;
+
+      const percentage = tasks.length
+        ? (completedCount / tasks.length) * 100
+        : 0;
+
+      document.getElementById("progressBar").style.width =
+        percentage + "%";
+
+      document.getElementById("emptyMessage").hidden =
+        tasks.length > 0;
+    }
+
+    function renderTasks() {
+      taskList.replaceChildren();
+
+      tasks.forEach(task => {
+        const item = document.createElement("li");
+        item.className = task.completed ? "done" : "";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.completed;
+        checkbox.setAttribute(
+          "aria-label",
+          "Mark " + task.text + " as completed"
+        );
+
+        checkbox.addEventListener("change", () => {
+          task.completed = checkbox.checked;
+          saveTasks();
+          renderTasks();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = task.text;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete";
+
+        deleteButton.addEventListener("click", () => {
+          tasks = tasks.filter(t => t.id !== task.id);
+          saveTasks();
+          renderTasks();
+        });
+
+        item.append(checkbox, text, deleteButton);
+        taskList.appendChild(item);
+      });
+
+      updateDashboard();
+    }
+
+    taskForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const text = taskInput.value.trim();
+
+      if (!text) return;
+
+      tasks.push({
+        id: Date.now() + Math.random(),
+        text: text,
+        completed: false
+      });
+
+      saveTasks();
+      renderTasks();
+      taskForm.reset();
+      taskInput.focus();
+    });
+
+    renderTasks();
+  </script>
+</body>
+</html>
